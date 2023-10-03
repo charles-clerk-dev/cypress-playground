@@ -15,6 +15,7 @@ declare global {
       signOut(): Chainable<any>;
       signIn(): Chainable<any>;
       signUp(): Chainable<any>;
+      signUpMultipleTimes(numAttempts: number): Chainable<any>;
     }
     interface Window {
       Clerk?: {
@@ -73,6 +74,38 @@ Cypress.Commands.add(`signIn`, () => {
     })
     .then(() => {
       cy.log(`Finished Signing in.`);
+    });
+});
+
+Cypress.Commands.add(`signUp`, () => {
+  cy.log(`Signing up.`);
+  cy.visit("/", {
+    auth: {
+      username: "clerk",
+      password: "test_password",
+    },
+  });
+
+  cy.window()
+    .should((window: Cypress.Window) => {
+      expect(window).to.not.have.property(`Clerk`, undefined);
+      expect(window.Clerk!.isReady()).to.eq(true);
+    })
+    .then((window: Cypress.Window) => {
+      const domain = (window as Window & typeof globalThis).location.hostname;
+      cy.clearCookies({ domain: domain });
+      return window.Clerk!.client.signUp.create({
+        emailAddress: "wefsowrites@gmail.com",
+        password: `408tz!co`,
+      });
+    })
+    .then((res) => {
+      return cy.window().its("Clerk").invoke("setActive", {
+        session: res.createdSessionId,
+      });
+    })
+    .then(() => {
+      cy.log(`Finished Signing up.`);
     });
 });
 
